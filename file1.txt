@@ -1,0 +1,85 @@
+import { Component, State,  h } from '@stencil/core';
+import {w3cwebsocket as W3CWebSocket} from 'websocket';
+
+const client = new W3CWebSocket('ws://127.0.0.1:8000');
+
+@Component({
+  tag: 'app-chat',
+  styleUrl: 'app-chat.css',
+  shadow: true,
+})
+
+export class AppChat {
+public messageValue = '';
+
+componentWillLoad(){
+  client.onopen = () => {
+    console.log('Websocket Client Connected');
+  };
+}
+componentDidLoad(){
+  client.onmessage = (message) => {
+    const dataFromServer = JSON.parse(message.data);
+    console.log("got reply! ", dataFromServer);
+    if(dataFromServer.type === "message"){
+      this.messages.message = [
+        ...this.messages.message,{
+          msg : dataFromServer.msg,
+          user: dataFromServer.user
+        }]
+      }
+    };
+}
+  @State() Auth = {
+    userName: '',
+    isLoggedIn: false,
+  }
+
+  @State() messages = {
+    message : []
+  }
+  onButtonClicked = (value) => {
+    client.send(JSON.stringify({
+        type: "message",
+        msg: value,
+        user: this.Auth.userName
+    }));
+  }
+  changeMessageValue(value){
+      this.messages.message.push(value);
+      this.messageValue = value;
+      console.log(this.messages.message);
+  }
+  changeFormValue(controlName:string, value:any) {
+    console.log(this.Auth);
+    this.Auth = {
+      ...this.Auth,
+      [controlName]: value.value
+    };
+  }
+  changeLoginState(){
+    this.Auth.isLoggedIn = true;
+    console.log(this.Auth.isLoggedIn);
+  }
+  
+  render() {
+    return (
+    <div class="main"> 
+      {this.Auth.isLoggedIn ?
+      <div>
+        <input onInput = {(e) => this.changeMessageValue(e.target)} name = "message" type='text'></input>
+        <button onClick={() => this.onButtonClicked(this.messageValue)}>Send Message</button>
+        {this.messages.message.map(msg => <p>message : {msg.msg}, user: {msg.user}</p>)}
+      </div>
+       :    
+       <div>
+        <input onInput = {(e) => this.changeFormValue('userName',e.target)} name = "userName" type='text'></input>
+        <button onClick={() => this.changeLoginState()}>Login</button>
+      </div>
+      }
+    </div>
+    );
+  }
+
+}
+
