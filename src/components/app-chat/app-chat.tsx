@@ -11,6 +11,7 @@ const client = new W3CWebSocket('ws://127.0.0.1:8000');
 
 export class AppChat {
   public sentMessage = '';
+  @State() msg = [];
   @State() Auth = {
     userName: '',
     isLoggedIn: false,
@@ -23,7 +24,9 @@ export class AppChat {
         msg: value,
         user: this.Auth.userName
     }));
+
   }
+  
   changeFormValue(controlName:string, value:any) {
     this.Auth = {
       ...this.Auth,
@@ -38,15 +41,21 @@ export class AppChat {
     client.onmessage = (message) => {
       const dataFromServer = JSON.parse(message.data);
       console.log("got reply! ", dataFromServer);
+      
       if(dataFromServer.type === "message"){
-        this.Auth.messages = [
-          ...this.Auth.messages,{
+        this.msg = [
+          ...this.msg,
+          {
             msg : dataFromServer.msg,
-            user: dataFromServer.user
-          }]
+            user : dataFromServer.user
+          }
+        ]
         }
+        
+        console.log(this.Auth.messages)
     }
   }
+  
   changeLoginState(){
     this.Auth.isLoggedIn = true;
     console.log(this.Auth.isLoggedIn);
@@ -56,9 +65,10 @@ export class AppChat {
     <div>
     {this.Auth.isLoggedIn ?
       <div>
-      <input onInput = {(e) => this.changeFormValue('messages',e.target)} id = "message" type='text'></input>
+      <input onInput= {(e) => this.changeFormValue('messages',e.target)} id = "message" type='text'></input>
       <button onClick={() => this.onButtonClicked(this.sentMessage)}>Click Me</button>
-      </div> 
+      {this.msg.map(msg => <p>{msg.user} : {msg.msg}</p>)}
+      </div>
        :
        <div>
         <input onInput = {(e) => this.changeFormValue('userName',e.target)} name = "userName" type='text'></input>
